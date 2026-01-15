@@ -1,0 +1,35 @@
+{
+  "id": "point-buy-calculator",
+  "title": "D&D 5E 购点计算器",
+  "description": "一个路过的计算器，被我抓来打工了",
+  "version": "2.0.0",
+  "authors": [
+    {
+      "name": "Alioth"
+    }
+  ],
+  "compatibility": {
+    "minimum": 13,
+    "verified": 13
+  },
+  "relationships": {
+    "systems": [
+      {
+        "id": "dnd5e",
+        "type": "system",
+        "compatibility": {
+          "minimum": "5.2.0"
+        }
+      }
+    ]
+  },
+  "esmodules": [
+    "scripts/point-buy-calculator.js"
+  ],
+  "styles": [
+    "styles/point-buy-calculator.css"
+  ],
+  "url": "https://github.com/Tony-Gan/point-buy-calculator",
+  "manifest": "https://github.com/Tony-Gan/point-buy-calculator/releases/latest/download/module.json",
+  "download": "https://github.com/Tony-Gan/point-buy-calculator/releases/latest/download/module.zip"
+}

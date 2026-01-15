@@ -1,0 +1,331 @@
+.point-buy-calculator {
+  min-width: 350px;
+  border-radius: 14px;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 14px 50px rgba(0, 0, 0, 0.35);
+}
+
+.point-buy-calculator .window-header,
+.point-buy-calculator .window-content {
+  background: rgba(255, 255, 255, 0.60);
+}
+
+.point-buy-calculator .window-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.10);
+}
+
+.theme-dark .point-buy-calculator .window-header,
+.theme-dark .point-buy-calculator .window-content,
+.point-buy-calculator.theme-dark .window-header,
+.point-buy-calculator.theme-dark .window-content {
+  background: rgba(18, 18, 20, 0.70);
+}
+
+.theme-dark .point-buy-calculator .window-header,
+.point-buy-calculator.theme-dark .window-header {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.point-buy-calculator .window-content {
+  overflow-y: auto;
+}
+
+.point-buy-container {
+  padding: 15px;
+  font-family: "Signika", sans-serif;
+}
+
+.settings-section {
+  margin-bottom: 15px;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 10px;
+}
+
+.setting-row label {
+  font-weight: bold;
+  min-width: 100px;
+  color: var(--color-text-dark-primary);
+}
+
+.setting-row input {
+  flex: 0 0 50px;
+  padding: 4px 6px;
+  border: 1px solid var(--color-border-light-tertiary);
+  border-radius: 3px;
+  background: var(--color-bg-input);
+  color: var(--color-text-dark-primary);
+  font-size: 14px;
+  text-align: center;
+}
+
+.setting-row .setting-value {
+  flex: 0 0 50px;
+  padding: 4px 6px;
+  border: 1px solid var(--color-border-light-tertiary);
+  border-radius: 3px;
+  background: var(--color-bg-input);
+  color: var(--color-text-dark-primary);
+  font-size: 14px;
+  text-align: center;
+  font-weight: bold;
+  line-height: 18px;
+}
+
+.setting-row input:focus {
+  outline: none;
+  border-color: var(--color-border-highlight);
+  box-shadow: 0 0 3px var(--color-shadow-highlight);
+}
+
+#remaining-points.positive {
+  color: #0066cc;
+  font-weight: bold;
+}
+
+#remaining-points.zero {
+  color: #00aa00;
+  font-weight: bold;
+}
+
+#remaining-points.negative {
+  color: #cc0000;
+  font-weight: bold;
+}
+
+.section-divider {
+  border: none;
+  border-top: 1px solid var(--color-border-light-tertiary);
+  margin: 15px 0;
+}
+
+.stats-section {
+  margin-top: 15px;
+}
+
+.apply-section {
+  margin-top: 15px;
+}
+
+.apply-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.character-select-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.apply-label {
+  font-weight: bold;
+  min-width: 80px;
+  color: var(--color-text-dark-primary);
+  font-family: "Signika", "Courier New", monospace;
+}
+
+.character-dropdown {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border-light-tertiary);
+  border-radius: 4px;
+  background: var(--color-bg-input);
+  color: var(--color-text-dark-primary);
+  font-size: 14px;
+  min-height: 28px;
+  color-scheme: light dark;
+}
+
+.character-dropdown option,
+.character-dropdown optgroup {
+  background: var(--color-bg-input);
+  color: var(--color-text-dark-primary);
+}
+
+.character-dropdown:focus {
+  outline: none;
+  border-color: var(--color-border-highlight);
+  box-shadow: 0 0 3px var(--color-shadow-highlight);
+}
+
+.apply-button {
+  background: #4CAF50;
+  border: 1px solid #45a049;
+  color: white;
+  padding: 6px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  outline: none;
+  min-width: 80px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.apply-button:hover:not(:disabled) {
+  background: #45a049;
+}
+
+.apply-button:active:not(:disabled) {
+  background: #3d8b40;
+  transform: scale(0.95);
+}
+
+.apply-button:disabled,
+.apply-button.disabled {
+  background: #cccccc !important;
+  border-color: #999999 !important;
+  color: #666666 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  opacity: 0.6;
+}
+
+.apply-button:disabled:hover,
+.apply-button.disabled:hover {
+  background: #cccccc !important;
+  transform: none !important;
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  gap: 10px;
+}
+
+.stat-label {
+  font-weight: bold;
+  min-width: 100px;
+  color: var(--color-text-dark-primary);
+  font-family: "Signika", "Courier New", monospace;
+}
+
+.stat-input-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.stat-input {
+  text-align: center;
+  padding: 4px 6px;
+  border: 1px solid var(--color-border-light-tertiary);
+  border-radius: 4px;
+  background: var(--color-bg-input);
+  color: var(--color-text-dark-primary);
+  font-size: 14px;
+  font-weight: bold;
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+}
+
+.stat-input:focus {
+  outline: none;
+  border-color: var(--color-border-highlight);
+  box-shadow: 0 0 3px var(--color-shadow-highlight);
+}
+
+.stat-adjust {
+  background: var(--color-bg-option);
+  border: 1px solid var(--color-border-light-tertiary);
+  color: var(--color-text-dark-primary);
+  padding: 4px 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  min-width: 22px;
+  width: 22px;
+  height: 28px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-adjust:hover {
+  background: var(--color-bg-option-hover);
+}
+
+.stat-adjust:active {
+  background: var(--color-bg-option-active);
+  transform: scale(0.95);
+}
+
+.stat-adjust:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.stat-adjust:disabled {
+  background: var(--color-bg-disabled);
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+}
+
+.stat-input::-webkit-outer-spin-button,
+.stat-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.stat-input[type=number] {
+  appearance: textfield;
+}
+
+@media (max-width: 400px) {
+  .point-buy-container {
+    padding: 10px;
+  }
+  
+  .setting-row,
+  .stat-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .setting-row label,
+  .stat-label {
+    min-width: auto;
+    margin-bottom: 4px;
+  }
+}
+
+.theme-dark .point-buy-calculator .setting-row label,
+.point-buy-calculator.theme-dark .setting-row label,
+.theme-dark .point-buy-calculator .apply-label,
+.point-buy-calculator.theme-dark .apply-label,
+.theme-dark .point-buy-calculator .stat-label,
+.point-buy-calculator.theme-dark .stat-label {
+  color: var(--color-text-light-primary);
+}
+
+.theme-dark .point-buy-calculator .setting-row input,
+.point-buy-calculator.theme-dark .setting-row input,
+.theme-dark .point-buy-calculator .setting-row .setting-value,
+.point-buy-calculator.theme-dark .setting-row .setting-value,
+.theme-dark .point-buy-calculator .character-dropdown,
+.point-buy-calculator.theme-dark .character-dropdown,
+.theme-dark .point-buy-calculator .stat-input,
+.point-buy-calculator.theme-dark .stat-input,
+.theme-dark .point-buy-calculator .stat-adjust,
+.point-buy-calculator.theme-dark .stat-adjust {
+  color: var(--color-text-light-primary);
+}
