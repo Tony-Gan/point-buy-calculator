@@ -3,6 +3,7 @@
   "title": "D&D 5E 购点计算器",
   "description": "一个路过的计算器，被我抓来打工了",
   "version": "2.0.0",
+  "license": "GPL-3.0",
   "authors": [
     {
       "name": "Alioth"
