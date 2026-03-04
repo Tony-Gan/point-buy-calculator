@@ -1,8 +1,8 @@
 <div class="point-buy-root">
   {{#if canShowValidator}}
   <nav class="point-buy-tab-nav" aria-label="Point Buy Tabs">
-    <a class="point-buy-tab active" data-tab="calculator" role="tab" aria-selected="true" href="#">购点计算器</a>
-    <a class="point-buy-tab" data-tab="validator" role="tab" aria-selected="false" href="#">点数验证器</a>
+    <button class="point-buy-tab active" data-tab="calculator" role="tab" aria-selected="true" type="button">购点计算器</button>
+    <button class="point-buy-tab" data-tab="validator" role="tab" aria-selected="false" type="button">点数验证器</button>
   </nav>
   {{/if}}
 
@@ -66,9 +66,16 @@
   <section class="point-buy-tab-panel" data-tab="validator">
     <div class="point-buy-container validator-container">
       <div class="validator-controls">
-        <div class="validator-row">
-          <label>可用点数：</label>
-          <span id="validator-total-points" class="setting-value">{{data.totalPoints}}</span>
+        <div class="validator-row validator-row--summary">
+          <div class="validator-summary-item">
+            <label>可用点数：</label>
+            <span id="validator-total-points" class="setting-value">{{data.totalPoints}}</span>
+          </div>
+
+          <div class="validator-summary-item">
+            <label>点数上限：</label>
+            <span id="validator-max-stat" class="setting-value">{{data.maxStat}}</span>
+          </div>
         </div>
 
         <div class="validator-row">
@@ -83,7 +90,10 @@
 
       <hr class="section-divider" />
 
-      <div id="validator-output" class="validator-output">占位符</div>
+      <div id="validator-output" class="validator-output">
+        <div class="validator-breakdown"></div>
+        <div class="validator-result"></div>
+      </div>
     </div>
   </section>
   {{/if}}

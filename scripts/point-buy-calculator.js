@@ -8,12 +8,18 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
     this.validatorResult = "";
   }
 
+  async close(options = {}) {
+    const closed = await super.close(options);
+    ui.controls?.render?.();
+    return closed;
+  }
+
   static DEFAULT_OPTIONS = {
     id: "point-buy-calculator",
     classes: ["point-buy-calculator"],
-    position: { width: 400, height: 540 },
+    position: { width: 400, height: "auto" },
     window: {
-      title: "D&D 5E 购点计算器",
+      title: "购点工具箱",
       icon: "fas fa-calculator",
       resizable: false
     }
@@ -75,6 +81,16 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
       canShowValidator: game.user.isGM
     };
   }
+
+  _requestAutoSize() {
+    if (!this.rendered) return;
+    requestAnimationFrame(() => {
+      try {
+        this.setPosition({ height: "auto" });
+      } catch (_err) {}
+    });
+  }
+
   calculateStatCost(value) {
     if (value <= 8) return 0;
     if (value <= 13) return value - 8;
@@ -150,7 +166,7 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
     const abilities = actor.system.abilities;
     const stats = ["str", "dex", "con", "int", "wis", "cha"];
 
-    return stats.every(stat => abilities[stat].value === 8);
+    return stats.every(stat => abilities[stat].value === 10);
   }
 
   async applyStatsToCharacter(actorId) {
@@ -159,16 +175,45 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
       ui.notifications.error("找不到指定的角色！");
       return;
     }
-
     try {
-      const updateData = {
-        "system.abilities.str.value": this.data.stats.str,
-        "system.abilities.dex.value": this.data.stats.dex,
-        "system.abilities.con.value": this.data.stats.con,
-        "system.abilities.int.value": this.data.stats.int,
-        "system.abilities.wis.value": this.data.stats.wis,
-        "system.abilities.cha.value": this.data.stats.cha
-      };
+      const abilities = ["str", "dex", "con", "int", "wis", "cha"];
+
+      const backgroundItem = actor.items?.find(i => i.type === "background");
+      const backgroundAdv = this._getAbilityDeltasFromAdvancements(backgroundItem);
+
+      const featAdv = this._emptyAbilityMap();
+      const featItems = actor.items?.filter(i => i.type === "feat") ?? [];
+      featItems.forEach((it) => {
+        this._addAbilityMap(featAdv, this._getAbilityDeltasFromAdvancements(it));
+      });
+
+      const effectBuckets = this._getEffectAbilityDeltasByBucket(actor);
+      const otherAdv = this._getOtherAbilityDeltasFromAdvancements(actor);
+
+      const updateData = {};
+      for (const k of abilities) {
+        const desiredPointBuy = Number(this.data.stats?.[k] ?? 8);
+
+        const current = Number(actor.system?.abilities?.[k]?.value ?? 0);
+        const source = Number(actor._source?.system?.abilities?.[k]?.value ?? current);
+
+        const backgroundEffect = effectBuckets.background[k] ?? 0;
+        const featEffect = effectBuckets.feat[k] ?? 0;
+        const otherEffect = effectBuckets.other[k] ?? 0;
+        const totalEffectDelta = current - source;
+
+        const background = (backgroundAdv[k] ?? 0) + backgroundEffect;
+        const feat = (featAdv[k] ?? 0) + featEffect;
+
+        const accountedEffect = backgroundEffect + featEffect + otherEffect;
+        const remainderEffect = totalEffectDelta - accountedEffect;
+        const other = (otherAdv[k] ?? 0) + otherEffect + remainderEffect;
+
+        const pointBuy = current - background - feat - other;
+        const targetSource = source + (desiredPointBuy - pointBuy);
+
+        updateData[`system.abilities.${k}.value`] = Number.isFinite(targetSource) ? Math.round(targetSource) : desiredPointBuy;
+      }
 
       await actor.update(updateData);
 
@@ -198,6 +243,7 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
   activateTab(tabId, htmlElement) {
     this.activeTab = tabId;
     this.applyTabState(htmlElement);
+    this._requestAutoSize();
   }
 
   _emptyAbilityMap() {
@@ -233,6 +279,9 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
     const advancements = this._getItemAdvancements(item);
     for (const adv of advancements) {
       const value = adv?.value ?? adv?.system?.value ?? adv?.data?.value ?? null;
+      const changeType = value?.type ?? value?.data?.type ?? null;
+      if (changeType !== "asi") continue;
+
       const assignments = value?.assignments ?? value?.data?.assignments ?? adv?.assignments ?? null;
       if (!assignments || typeof assignments !== "object") continue;
 
@@ -242,6 +291,17 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
       }
     }
 
+    return totals;
+  }
+
+  _getOtherAbilityDeltasFromAdvancements(actor) {
+    const totals = this._emptyAbilityMap();
+    const items = actor?.items ?? [];
+    for (const item of items) {
+      if (item?.type === "background") continue;
+      if (item?.type === "feat") continue;
+      this._addAbilityMap(totals, this._getAbilityDeltasFromAdvancements(item));
+    }
     return totals;
   }
 
@@ -300,17 +360,25 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
     const output = this.element.querySelector("#validator-output");
     if (!output) return;
 
-    output.classList.remove("success");
+    const breakdown = output.querySelector(".validator-breakdown");
+    const result = output.querySelector(".validator-result");
+    if (!breakdown || !result) return;
+
+    result.classList.remove("success", "info", "error");
 
     if (!selectedActorId) {
       ui.notifications.warn("请先选择一个角色！");
-      output.textContent = "请先选择一个角色。";
+      breakdown.textContent = "";
+      result.textContent = "请先选择一个角色。";
+      result.classList.add("error");
       return;
     }
 
     const actor = game.actors.get(selectedActorId);
     if (!actor) {
-      output.textContent = "找不到指定的角色。";
+      breakdown.textContent = "";
+      result.textContent = "找不到指定的角色。";
+      result.classList.add("error");
       return;
     }
 
@@ -334,6 +402,7 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
     });
 
     const effectBuckets = this._getEffectAbilityDeltasByBucket(actor);
+    const otherAdv = this._getOtherAbilityDeltasFromAdvancements(actor);
 
     const rows = abilities.map((k) => {
       const current = Number(actor.system?.abilities?.[k]?.value ?? 0);
@@ -341,15 +410,21 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
 
       const backgroundEffect = effectBuckets.background[k] ?? 0;
       const featEffect = effectBuckets.feat[k] ?? 0;
+      const otherEffect = effectBuckets.other[k] ?? 0;
       const totalEffectDelta = current - source;
 
       const background = (backgroundAdv[k] ?? 0) + backgroundEffect;
       const feat = (featAdv[k] ?? 0) + featEffect;
-      const other = totalEffectDelta - backgroundEffect - featEffect;
+
+      const accountedEffect = backgroundEffect + featEffect + otherEffect;
+      const remainderEffect = totalEffectDelta - accountedEffect;
+      const other = (otherAdv[k] ?? 0) + otherEffect + remainderEffect;
+
       const pointBuy = current - background - feat - other;
 
       return {
         label: labels[k] ?? k.toUpperCase(),
+        key: k,
         pointBuy,
         background,
         feat,
@@ -382,8 +457,46 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
       </table>
     `;
 
-    output.innerHTML = tableHtml;
+    breakdown.innerHTML = tableHtml;
+
+    const maxStat = Number(this.data.maxStat) || 15;
+    const totalPoints = Number(this.data.totalPoints) || 27;
+
+    for (const r of rows) {
+      const pb = Number(r.pointBuy);
+      if (!Number.isFinite(pb)) continue;
+
+      if (pb > maxStat) {
+        result.textContent = `验证未通过，当前${r.label}的购点值超过所允许的上限（${maxStat}）`;
+        result.classList.add("error");
+        this._requestAutoSize();
+        return;
+      }
+
+      if (pb < 8) {
+        result.textContent = `验证未通过，当前${r.label}的购点值小于8`;
+        result.classList.add("error");
+        this._requestAutoSize();
+        return;
+      }
+    }
+
+    const usedPoints = rows.reduce((sum, r) => sum + this.calculateStatCost(Number(r.pointBuy)), 0);
+
+    if (usedPoints < totalPoints) {
+      result.textContent = "验证通过，当前使用点数小于可用点数";
+      result.classList.add("info");
+    } else if (usedPoints > totalPoints) {
+      result.textContent = "验证未通过，当前使用点数大于可用点数";
+      result.classList.add("error");
+    } else {
+      result.textContent = "验证通过";
+      result.classList.add("success");
+    }
+
+    this._requestAutoSize();
   }
+
   async handleApplyStats() {
     if (this.data.remainingPoints < 0) {
       ui.notifications.warn("当前剩余点数小于0，请重新分配点数");
@@ -492,6 +605,7 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
     this.populateCharacterDropdown(htmlElement, "#validator-character-select");
     this.applyTabState(htmlElement);
     this.updateRemainingPoints();
+    this._requestAutoSize();
   }
 }
 

@@ -1,4 +1,6 @@
 .point-buy-calculator {
+  --pb-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-variant-numeric: tabular-nums;
   min-width: 350px;
   border-radius: 14px;
   overflow: hidden;
@@ -63,6 +65,7 @@
   color: var(--color-text-dark-primary);
   font-size: 14px;
   text-align: center;
+  font-family: var(--pb-font-mono), "Signika", sans-serif;
 }
 
 .setting-row .setting-value {
@@ -76,6 +79,7 @@
   text-align: center;
   font-weight: bold;
   line-height: 18px;
+  font-family: var(--pb-font-mono), "Signika", sans-serif;
 }
 
 .setting-row input:focus {
@@ -130,7 +134,7 @@
   font-weight: bold;
   min-width: 80px;
   color: var(--color-text-dark-primary);
-  font-family: "Signika", "Courier New", monospace;
+  font-family: var(--pb-font-mono), "Signika", sans-serif;
 }
 
 .character-dropdown {
@@ -211,7 +215,7 @@
   font-weight: bold;
   min-width: 100px;
   color: var(--color-text-dark-primary);
-  font-family: "Signika", "Courier New", monospace;
+  font-family: var(--pb-font-mono), "Signika", sans-serif;
 }
 
 .stat-input-group {
@@ -233,6 +237,7 @@
   width: 40px;
   min-width: 40px;
   max-width: 40px;
+  font-family: var(--pb-font-mono), "Signika", sans-serif;
 }
 
 .stat-input:focus {
@@ -352,11 +357,21 @@
   user-select: none;
   text-decoration: none;
   font-weight: 600;
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+}
+
+.point-buy-tab:not(.active) {
+  opacity: 0.75;
 }
 
 .point-buy-tab.active {
   background: var(--color-bg-option-active);
   border-color: var(--color-border-highlight);
+  border-width: 2px;
+  box-shadow: 0 0 0 2px var(--color-shadow-highlight);
+  font-weight: 800;
 }
 
 .point-buy-tab-panel {
@@ -385,21 +400,62 @@
   gap: 10px;
 }
 
+.validator-row--summary {
+  justify-content: flex-start;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.validator-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .validator-output {
-  flex: 1;
-  min-height: 260px;
-  padding: 10px;
+  flex: 0 0 285px;
+  height: 285px;
+  min-height: 285px;
+  max-height: 285px;
+  padding: 0;
   border: 1px solid var(--color-border-light-tertiary);
   border-radius: 6px;
   background: var(--color-bg-input);
   color: var(--color-text-dark-primary);
-  overflow: auto;
-  white-space: pre-wrap;
+  overflow: hidden;
+  font-family: var(--pb-font-mono), "Signika", sans-serif;
+  white-space: normal;
+  display: flex;
+  flex-direction: column;
 }
 
-.validator-output.success {
-  color: #00aa00;
+.validator-breakdown {
+  flex: 0 0 80%;
+  padding: 10px;
+  overflow: auto;
+}
+
+.validator-result {
+  flex: 0 0 15%;
+  padding: 10px;
+  border-top: 1px solid var(--color-border-light-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   font-weight: bold;
+}
+
+.validator-result.success {
+  color: #00aa00;
+}
+
+.validator-result.info {
+  color: #0066cc;
+}
+
+.validator-result.error {
+  color: #cc0000;
 }
 
 /* Validator table */
@@ -410,10 +466,20 @@
 
 .validator-table th,
 .validator-table td {
-  border: 1px solid var(--color-border-light-tertiary);
+  border: none;
   padding: 4px 6px;
   text-align: center;
   font-size: 13px;
+  font-family: var(--pb-font-mono), "Signika", sans-serif;
+}
+
+.validator-table tbody tr:nth-child(odd) {
+  background: transparent;
+}
+
+.theme-dark .point-buy-calculator .validator-table tbody tr:nth-child(odd),
+.point-buy-calculator.theme-dark .validator-table tbody tr:nth-child(odd) {
+  background: transparent;
 }
 
 .validator-table th[scope="row"] {
