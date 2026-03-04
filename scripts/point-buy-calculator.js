@@ -10,8 +10,20 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
 
   async close(options = {}) {
     const closed = await super.close(options);
+    await this._syncSceneControlToggle(false);
     ui.controls?.render?.();
     return closed;
+  }
+
+  async _syncSceneControlToggle(active) {
+    const controls = ui.controls;
+    if (!controls?.activate) return;
+    const toolId = this.id;
+    const tools = controls.tools ?? {};
+    if (!(toolId in tools)) return;
+    try {
+      await controls.activate({ toggles: { [toolId]: Boolean(active) } });
+    } catch (_err) {}
   }
 
   static DEFAULT_OPTIONS = {
@@ -428,34 +440,24 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
         pointBuy,
         background,
         feat,
-        other
+        other,
+        total: current
       };
     });
 
-    const tableHtml = `
-      <table class="validator-table">
-        <thead>
-          <tr>
-            <th></th>
-            <th>购点</th>
-            <th>背景</th>
-            <th>专长</th>
-            <th>其他</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows.map(r => `
-            <tr>
-              <th scope="row">${r.label}</th>
-              <td>${r.pointBuy}</td>
-              <td>${r.background}</td>
-              <td>${r.feat}</td>
-              <td>${r.other}</td>
-            </tr>
-          `).join("")}
-        </tbody>
-      </table>
-    `;
+    const headerCells = ["", "购点", "背景", "专长", "其他", "总点数"];
+    const headerRowHtml = headerCells.map((h) => `<th>${h}</th>`).join("");
+    const buildValidatorRowHtml = (r) => {
+      const cells = [r.pointBuy, r.background, r.feat, r.other, r.total];
+      return `<tr><th scope="row">${r.label}</th>${cells.map((v) => `<td>${v}</td>`).join("")}</tr>`;
+    };
+
+    const tableHtml = [
+      `<table class="validator-table">`,
+      `<thead><tr>${headerRowHtml}</tr></thead>`,
+      `<tbody>${rows.map((r) => buildValidatorRowHtml(r)).join("")}</tbody>`,
+      `</table>`
+    ].join("");
 
     breakdown.innerHTML = tableHtml;
 
@@ -670,7 +672,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
           if (app) app.bringToFront?.();
           else new PointBuyCalculator().render({ force: true });
         } else {
-          await app?.close?.();
+          if (app?.rendered) await app.close();
         }
       } catch (err) {
         console.error("[point-buy-calculator] 打开/关闭失败", err);
