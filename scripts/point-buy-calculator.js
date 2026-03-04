@@ -4,6 +4,8 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
   constructor(options = {}) {
     super(options);
     this.resetData();
+    this.activeTab = "calculator";
+    this.validatorResult = "";
   }
 
   static DEFAULT_OPTIONS = {
@@ -36,8 +38,8 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
     if (!Number.isFinite(maxStat)) maxStat = 15;
     if (!Number.isFinite(totalPoints)) totalPoints = 27;
 
-    maxStat = Math.min(20, Math.max(8, Math.round(maxStat)));
-    totalPoints = Math.max(0, Math.round(totalPoints));
+    maxStat = Math.min(18, Math.max(8, Math.round(maxStat)));
+    totalPoints = Math.min(50, Math.max(0, Math.round(totalPoints)));
 
     this.data = {
       maxStat: maxStat,
@@ -56,7 +58,7 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
 
   async _prepareContext(_options) {
     const ownedCharacters = game.actors.filter(actor =>
-      actor.type === "character" && actor.isOwner
+      actor.type === "character" && (game.user.isGM || actor.isOwner)
     );
 
     return {
@@ -69,14 +71,17 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
         wis: "感知[WIS]",
         cha: "魅力[CHA]"
       },
-      ownedCharacters: ownedCharacters
+      ownedCharacters: ownedCharacters,
+      canShowValidator: game.user.isGM
     };
   }
-
   calculateStatCost(value) {
     if (value <= 8) return 0;
     if (value <= 13) return value - 8;
-    return 5 + (value - 13) * 2;
+    if (value <= 15) return 5 + (value - 13) * 2;
+    if (value <= 17) return 9 + (value - 15) * 3;
+    if (value === 18) return 19;
+    return 19;
   }
 
   calculateTotalCost() {
@@ -119,16 +124,15 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
     this.render({ force: true });
   }
 
-  populateCharacterDropdown(html) {
-    const dropdown = html.querySelector("#character-select");
+  populateCharacterDropdown(html, selector = "#character-select") {
+    const dropdown = html.querySelector(selector);
     if (!dropdown) return;
 
     const ownedCharacters = game.actors.filter(actor =>
-      actor.type === "character" && actor.isOwner
+      actor.type === "character" && (game.user.isGM || actor.isOwner)
     );
 
     dropdown.replaceChildren();
-
     const placeholder = document.createElement("option");
     placeholder.value = "";
     placeholder.textContent = "-- 请选择角色 --";
@@ -176,6 +180,210 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
     }
   }
 
+  applyTabState(htmlElement) {
+    if (!game.user.isGM) this.activeTab = "calculator";
+    const tabs = htmlElement.querySelectorAll(".point-buy-tab");
+    const panels = htmlElement.querySelectorAll(".point-buy-tab-panel");
+
+    tabs.forEach((tab) => {
+      tab.classList.toggle("active", tab.dataset.tab === this.activeTab);
+      tab.setAttribute("aria-selected", String(tab.dataset.tab === this.activeTab));
+    });
+
+    panels.forEach((panel) => {
+      panel.classList.toggle("active", panel.dataset.tab === this.activeTab);
+    });
+  }
+
+  activateTab(tabId, htmlElement) {
+    this.activeTab = tabId;
+    this.applyTabState(htmlElement);
+  }
+
+  _emptyAbilityMap() {
+    return { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 };
+  }
+
+  _addAbilityMap(target, add) {
+    if (!add) return;
+    for (const k of Object.keys(target)) {
+      target[k] += Number(add?.[k] ?? 0) || 0;
+    }
+  }
+
+  _getItemAdvancements(item) {
+    const adv = item?.advancement;
+    if (adv?.contents) return Array.from(adv.contents);
+    if (adv?.byId instanceof Map) return Array.from(adv.byId.values());
+    if (adv?.byId && typeof adv.byId === "object") return Object.values(adv.byId);
+
+    const sysAdv = item?.system?.advancement;
+    if (Array.isArray(sysAdv)) return sysAdv;
+    if (sysAdv?.byId instanceof Map) return Array.from(sysAdv.byId.values());
+    if (sysAdv?.byId && typeof sysAdv.byId === "object") return Object.values(sysAdv.byId);
+    if (sysAdv && typeof sysAdv === "object") return Object.values(sysAdv);
+
+    return [];
+  }
+
+  _getAbilityDeltasFromAdvancements(item) {
+    const totals = this._emptyAbilityMap();
+    if (!item) return totals;
+
+    const advancements = this._getItemAdvancements(item);
+    for (const adv of advancements) {
+      const value = adv?.value ?? adv?.system?.value ?? adv?.data?.value ?? null;
+      const assignments = value?.assignments ?? value?.data?.assignments ?? adv?.assignments ?? null;
+      if (!assignments || typeof assignments !== "object") continue;
+
+      for (const [ability, delta] of Object.entries(assignments)) {
+        if (!(ability in totals)) continue;
+        totals[ability] += Number(delta) || 0;
+      }
+    }
+
+    return totals;
+  }
+
+  _getOriginItemFromEffect(effect, actor) {
+    const origin = effect?.origin ?? effect?.system?.origin;
+    if (!origin) return null;
+    const m = origin.match(/\.Item\.([^.]+)(?:\.|$)/);
+    const itemId = m?.[1];
+    if (!itemId) return null;
+    return actor?.items?.get?.(itemId) ?? null;
+  }
+
+  _getEffectAbilityDeltasByBucket(actor) {
+    const out = {
+      background: this._emptyAbilityMap(),
+      feat: this._emptyAbilityMap(),
+      other: this._emptyAbilityMap()
+    };
+
+    const effects = actor?.appliedEffects ?? actor?.effects ?? [];
+    const ADD = CONST?.ACTIVE_EFFECT_MODES?.ADD ?? 2;
+
+    for (const effect of effects) {
+      if (effect?.disabled || effect?.system?.disabled) continue;
+
+      const originItem = this._getOriginItemFromEffect(effect, actor);
+      let bucket = "other";
+      if (originItem?.type === "background") bucket = "background";
+      else if (originItem?.type === "feat") bucket = "feat";
+
+      const changes = effect?.changes ?? effect?.system?.changes ?? [];
+      for (const ch of changes) {
+        const key = ch?.key ?? ch?.system?.key;
+        if (!key) continue;
+
+        const km = String(key).match(/^system\.abilities\.(str|dex|con|int|wis|cha)\.value$/);
+        if (!km) continue;
+
+        const mode = Number(ch?.mode ?? ch?.system?.mode);
+        if (mode !== ADD) continue;
+
+        const delta = Number(ch?.value ?? ch?.system?.value);
+        if (!Number.isFinite(delta)) continue;
+
+        out[bucket][km[1]] += delta;
+      }
+    }
+
+    return out;
+  }
+
+  handleValidatePoints() {
+    const dropdown = this.element.querySelector("#validator-character-select");
+    const selectedActorId = dropdown?.value;
+
+    const output = this.element.querySelector("#validator-output");
+    if (!output) return;
+
+    output.classList.remove("success");
+
+    if (!selectedActorId) {
+      ui.notifications.warn("请先选择一个角色！");
+      output.textContent = "请先选择一个角色。";
+      return;
+    }
+
+    const actor = game.actors.get(selectedActorId);
+    if (!actor) {
+      output.textContent = "找不到指定的角色。";
+      return;
+    }
+
+    const abilities = ["str", "dex", "con", "int", "wis", "cha"];
+    const labels = {
+      str: "力量[STR]",
+      dex: "敏捷[DEX]",
+      con: "体质[CON]",
+      int: "智力[INT]",
+      wis: "感知[WIS]",
+      cha: "魅力[CHA]"
+    };
+
+    const backgroundItem = actor.items?.find(i => i.type === "background");
+    const backgroundAdv = this._getAbilityDeltasFromAdvancements(backgroundItem);
+
+    const featAdv = this._emptyAbilityMap();
+    const featItems = actor.items?.filter(i => i.type === "feat") ?? [];
+    featItems.forEach((it) => {
+      this._addAbilityMap(featAdv, this._getAbilityDeltasFromAdvancements(it));
+    });
+
+    const effectBuckets = this._getEffectAbilityDeltasByBucket(actor);
+
+    const rows = abilities.map((k) => {
+      const current = Number(actor.system?.abilities?.[k]?.value ?? 0);
+      const source = Number(actor._source?.system?.abilities?.[k]?.value ?? current);
+
+      const backgroundEffect = effectBuckets.background[k] ?? 0;
+      const featEffect = effectBuckets.feat[k] ?? 0;
+      const totalEffectDelta = current - source;
+
+      const background = (backgroundAdv[k] ?? 0) + backgroundEffect;
+      const feat = (featAdv[k] ?? 0) + featEffect;
+      const other = totalEffectDelta - backgroundEffect - featEffect;
+      const pointBuy = current - background - feat - other;
+
+      return {
+        label: labels[k] ?? k.toUpperCase(),
+        pointBuy,
+        background,
+        feat,
+        other
+      };
+    });
+
+    const tableHtml = `
+      <table class="validator-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>购点</th>
+            <th>背景</th>
+            <th>专长</th>
+            <th>其他</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <th scope="row">${r.label}</th>
+              <td>${r.pointBuy}</td>
+              <td>${r.background}</td>
+              <td>${r.feat}</td>
+              <td>${r.other}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+
+    output.innerHTML = tableHtml;
+  }
   async handleApplyStats() {
     if (this.data.remainingPoints < 0) {
       ui.notifications.warn("当前剩余点数小于0，请重新分配点数");
@@ -266,7 +474,23 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
       await this.handleApplyStats();
     });
 
-    this.populateCharacterDropdown(htmlElement);
+    htmlElement.querySelectorAll(".point-buy-tab")?.forEach((tab) => {
+      tab.addEventListener("click", (event) => {
+        event.preventDefault();
+        const tabId = event.currentTarget?.dataset?.tab;
+        if (!tabId) return;
+        this.activateTab(tabId, htmlElement);
+      });
+    });
+
+    htmlElement.querySelector("#validate-points")?.addEventListener("click", (event) => {
+      event.currentTarget.blur();
+      this.handleValidatePoints();
+    });
+
+    this.populateCharacterDropdown(htmlElement, "#character-select");
+    this.populateCharacterDropdown(htmlElement, "#validator-character-select");
+    this.applyTabState(htmlElement);
     this.updateRemainingPoints();
   }
 }
@@ -280,7 +504,7 @@ Hooks.once("init", () => {
     restricted: true,
     type: Number,
     default: 15,
-    range: { min: 15, max: 24, step: 1 }
+    range: { min: 15, max: 18, step: 1 } 
   });
 
   game.settings.register("point-buy-calculator", "totalPoints", {
@@ -291,7 +515,7 @@ Hooks.once("init", () => {
     restricted: true,
     type: Number,
     default: 27,
-    range: { min: 21, max: 35, step: 1 }
+    range: { min: 27, max: 50, step: 1 }
   });
 
   game.settings.register("point-buy-calculator", "allowPlayers", {

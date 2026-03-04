@@ -1,53 +1,90 @@
-<div class="point-buy-container">
-    <div class="settings-section">
-      <div class="setting-row">
-        <label>单属性最大值：</label>
-        <span id="max-stat" class="setting-value">{{data.maxStat}}</span>
-      </div>
-      
-      <div class="setting-row">
-        <label>总点数：</label>
-        <span id="total-points" class="setting-value">{{data.totalPoints}}</span>
-      </div>
-      
-      <div class="setting-row">
-        <label>剩余点数：</label>
-        <span id="remaining-points" class="setting-value">{{data.remainingPoints}}</span>
-      </div>
-    </div>
+<div class="point-buy-root">
+  {{#if canShowValidator}}
+  <nav class="point-buy-tab-nav" aria-label="Point Buy Tabs">
+    <a class="point-buy-tab active" data-tab="calculator" role="tab" aria-selected="true" href="#">购点计算器</a>
+    <a class="point-buy-tab" data-tab="validator" role="tab" aria-selected="false" href="#">点数验证器</a>
+  </nav>
+  {{/if}}
 
-    <hr class="section-divider" />
-  
-    <div class="stats-section">
-      {{#each statLabels}}
-      <div class="stat-row">
-        <label class="stat-label">{{this}}：</label>
-        <div class="stat-input-group">
-          <button class="stat-adjust stat-decrease" data-stat="{{@key}}" data-adjust="-1" type="button">↓</button>
-          <input type="number" 
-                 class="stat-input" 
-                 data-stat="{{@key}}" 
-                 min="8" 
-                 max="{{../data.maxStat}}" 
-                 step="1" 
-                 value="{{lookup ../data.stats @key}}" />
-          <button class="stat-adjust stat-increase" data-stat="{{@key}}" data-adjust="1" type="button">↑</button>
+  <section class="point-buy-tab-panel active" data-tab="calculator">
+    <div class="point-buy-container">
+      <div class="settings-section">
+        <div class="setting-row">
+          <label>单属性最大值：</label>
+          <span id="max-stat" class="setting-value">{{data.maxStat}}</span>
+        </div>
+        
+        <div class="setting-row">
+          <label>总点数：</label>
+          <span id="total-points" class="setting-value">{{data.totalPoints}}</span>
+        </div>
+        
+        <div class="setting-row">
+          <label>剩余点数：</label>
+          <span id="remaining-points" class="setting-value">{{data.remainingPoints}}</span>
         </div>
       </div>
-      {{/each}}
+
+      <hr class="section-divider" />
+    
+      <div class="stats-section">
+        {{#each statLabels}}
+        <div class="stat-row">
+          <label class="stat-label">{{this}}：</label>
+          <div class="stat-input-group">
+            <button class="stat-adjust stat-decrease" data-stat="{{@key}}" data-adjust="-1" type="button">↓</button>
+            <input type="number" 
+                   class="stat-input" 
+                   data-stat="{{@key}}" 
+                   min="8" 
+                   max="{{../data.maxStat}}" 
+                   step="1" 
+                   value="{{lookup ../data.stats @key}}" />
+            <button class="stat-adjust stat-increase" data-stat="{{@key}}" data-adjust="1" type="button">↑</button>
+          </div>
+        </div>
+        {{/each}}
+      </div>
+    
+      <hr class="section-divider" />
+    
+      <div class="apply-section">
+        <div class="apply-row">
+          <div class="character-select-group">
+            <label class="apply-label">选择角色：</label>
+            <select id="character-select" class="character-dropdown">
+              <option value="">-- 请选择角色 --</option>
+            </select>
+          </div>
+          <button id="apply-stats" class="apply-button" type="button">应用</button>
+        </div>
+      </div>
     </div>
-  
-    <hr class="section-divider" />
-  
-    <div class="apply-section">
-      <div class="apply-row">
-        <div class="character-select-group">
+  </section>
+
+  {{#if canShowValidator}}
+  <section class="point-buy-tab-panel" data-tab="validator">
+    <div class="point-buy-container validator-container">
+      <div class="validator-controls">
+        <div class="validator-row">
+          <label>可用点数：</label>
+          <span id="validator-total-points" class="setting-value">{{data.totalPoints}}</span>
+        </div>
+
+        <div class="validator-row">
           <label class="apply-label">选择角色：</label>
-          <select id="character-select" class="character-dropdown">
+          <select id="validator-character-select" class="character-dropdown">
             <option value="">-- 请选择角色 --</option>
           </select>
         </div>
-        <button id="apply-stats" class="apply-button" type="button">应用</button>
+
+        <button id="validate-points" class="apply-button" type="button">验证</button>
       </div>
+
+      <hr class="section-divider" />
+
+      <div id="validator-output" class="validator-output">占位符</div>
     </div>
-  </div>
+  </section>
+  {{/if}}
+</div>

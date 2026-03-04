@@ -329,3 +329,101 @@
 .point-buy-calculator.theme-dark .stat-adjust {
   color: var(--color-text-light-primary);
 }
+
+/* ---------------------------- */
+/* Tabs & Validator (v2.1)      */
+/* ---------------------------- */
+
+.point-buy-tab-nav {
+  display: flex;
+  gap: 8px;
+  padding: 10px 15px 0 15px;
+}
+
+.point-buy-tab {
+  flex: 1;
+  text-align: center;
+  padding: 6px 8px;
+  border: 1px solid var(--color-border-light-tertiary);
+  border-radius: 6px;
+  background: var(--color-bg-option);
+  color: var(--color-text-dark-primary);
+  cursor: pointer;
+  user-select: none;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.point-buy-tab.active {
+  background: var(--color-bg-option-active);
+  border-color: var(--color-border-highlight);
+}
+
+.point-buy-tab-panel {
+  display: none;
+}
+
+.point-buy-tab-panel.active {
+  display: block;
+}
+
+.validator-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.validator-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.validator-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.validator-output {
+  flex: 1;
+  min-height: 260px;
+  padding: 10px;
+  border: 1px solid var(--color-border-light-tertiary);
+  border-radius: 6px;
+  background: var(--color-bg-input);
+  color: var(--color-text-dark-primary);
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.validator-output.success {
+  color: #00aa00;
+  font-weight: bold;
+}
+
+/* Validator table */
+.validator-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.validator-table th,
+.validator-table td {
+  border: 1px solid var(--color-border-light-tertiary);
+  padding: 4px 6px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.validator-table th[scope="row"] {
+  text-align: left;
+  white-space: nowrap;
+}
+
+.theme-dark .point-buy-calculator .point-buy-tab,
+.point-buy-calculator.theme-dark .point-buy-tab,
+.theme-dark .point-buy-calculator .validator-output,
+.point-buy-calculator.theme-dark .validator-output {
+  color: var(--color-text-light-primary);
+}
