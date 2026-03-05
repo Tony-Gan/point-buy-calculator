@@ -8,6 +8,19 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
     this.validatorResult = "";
   }
 
+  _canShowValidator() {
+    const role = Number(game.user?.role ?? 0);
+    const DEFAULT_MIN_ROLE = Number(CONST?.USER_ROLES?.GAMEMASTER ?? 4);
+    let minRole = DEFAULT_MIN_ROLE;
+
+    try {
+      minRole = Number(game.settings.get("point-buy-calculator", "validatorMinRole"));
+    } catch (_err) {}
+
+    if (!Number.isFinite(minRole)) minRole = DEFAULT_MIN_ROLE;
+    return role >= minRole;
+  }
+
   async close(options = {}) {
     const closed = await super.close(options);
     await this._syncSceneControlToggle(false);
@@ -90,7 +103,7 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
         cha: "魅力[CHA]"
       },
       ownedCharacters: ownedCharacters,
-      canShowValidator: game.user.isGM
+      canShowValidator: this._canShowValidator()
     };
   }
 
@@ -172,6 +185,8 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
       option.textContent = actor.name;
       dropdown.appendChild(option);
     });
+
+    if (ownedCharacters.length === 1) dropdown.value = ownedCharacters[0].id;
   }
 
   checkCharacterHasDefaultStats(actor) {
@@ -238,7 +253,7 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
   }
 
   applyTabState(htmlElement) {
-    if (!game.user.isGM) this.activeTab = "calculator";
+    if (!this._canShowValidator()) this.activeTab = "calculator";
     const tabs = htmlElement.querySelectorAll(".point-buy-tab");
     const panels = htmlElement.querySelectorAll(".point-buy-tab-panel");
 
@@ -366,6 +381,11 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
   }
 
   handleValidatePoints() {
+    if (!this._canShowValidator()) {
+      ui.notifications.warn("居然没有权限，立马拷问GM！");
+      return;
+    }
+
     const dropdown = this.element.querySelector("#validator-character-select");
     const selectedActorId = dropdown?.value;
 
@@ -486,10 +506,10 @@ class PointBuyCalculator extends PointBuyCalculatorBase {
     const usedPoints = rows.reduce((sum, r) => sum + this.calculateStatCost(Number(r.pointBuy)), 0);
 
     if (usedPoints < totalPoints) {
-      result.textContent = "验证通过，当前使用点数小于可用点数";
-      result.classList.add("info");
+      result.textContent = `验证未通过，当前使用点数小于可用点数（实际消费 ${usedPoints}/${totalPoints}）`;
+      result.classList.add("error");
     } else if (usedPoints > totalPoints) {
-      result.textContent = "验证未通过，当前使用点数大于可用点数";
+      result.textContent = `验证未通过，当前使用点数大于可用点数（实际消费 ${usedPoints}/${totalPoints}）`;
       result.classList.add("error");
     } else {
       result.textContent = "验证通过";
@@ -641,6 +661,22 @@ Hooks.once("init", () => {
     config: true,
     type: Boolean,
     default: true
+  });
+
+  game.settings.register("point-buy-calculator", "validatorMinRole", {
+    name: "点数验证器最低使用权限",
+    hint: "限制点数验证器的最低使用权限",
+    scope: "world",
+    config: true,
+    restricted: true,
+    type: Number,
+    default: Number(CONST?.USER_ROLES?.GAMEMASTER ?? 4),
+    choices: {
+      [Number(CONST?.USER_ROLES?.PLAYER ?? 1)]: "Player",
+      [Number(CONST?.USER_ROLES?.TRUSTED ?? 2)]: "Trusted Player",
+      [Number(CONST?.USER_ROLES?.ASSISTANT ?? 3)]: "Assistant GM",
+      [Number(CONST?.USER_ROLES?.GAMEMASTER ?? 4)]: "GM"
+    }
   });
 });
 
